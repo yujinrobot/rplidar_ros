@@ -193,19 +193,18 @@ namespace rplidar_ros {
                          angle_min, angle_max,
                          frame_id);
            }
-      }
-      // publishing invalid data may cause higher level programs to break
-      // so do not publish it
-      /*else if (op_result == RESULT_OPERATION_FAIL) {
+      } else if (op_result == RESULT_OPERATION_FAIL) {
             // All the data is invalid, just publish them
             float angle_min = DEG2RAD(0.0f);
             float angle_max = DEG2RAD(359.0f);
+
+            NODELET_WARN_STREAM("RPLidar : Publishing Invalid data; might burst! watch out..");
 
             this->publish_scan(&scan_pub, nodes, count,
                          start_scan_time, scan_duration, inverted,
                          angle_min, angle_max,
                          frame_id);
-        }*/
+        }
 
     }
     else if ( op_result == RESULT_OPERATION_TIMEOUT)
@@ -275,9 +274,16 @@ namespace rplidar_ros {
       // This is strict check which could to lose to see only if node_count is 0
       // But 99% of the time RPlidar produces 360 sized data
       if (node_count != 360) {
-          NODELET_INFO_STREAM("Node Count: " << node_count);
-          pub->publish(scan_msg);
+        NODELET_WARN_STREAM("RPLidar : Node count is not equal to 360");
+        NODELET_WARN_STREAM("Node Count: " << node_count);
       }
+
+      if (scan_msg->time_increment == std::numeric_limits<float>::infinity()) {
+        NODELET_WARN_STREAM("RPLidar : Time increment is infinity!");
+        NODELET_WARN_STREAM("Node Count: " << node_count);
+      }
+      
+      pub->publish(scan_msg);
   }
 
   int RPlidarNodelet::init_driver(std::string& serial_port, int& serial_baudrate)
