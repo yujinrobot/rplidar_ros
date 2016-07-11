@@ -17,6 +17,9 @@
 
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 
+#include <diagnostic_updater/diagnostic_updater.h>
+#include <diagnostic_updater/publisher.h>
+
 
 using namespace rp::standalone::rplidar;
 
@@ -42,8 +45,7 @@ namespace rplidar_ros {
     bool start_motor(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res);
     bool reset_device(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool reset_scan(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-
-
+    void device_diagnostics(diagnostic_updater::DiagnosticStatusWrapper &stat);
 
     RPlidarNodelet(){};
     ~RPlidarNodelet(){};
@@ -61,6 +63,9 @@ namespace rplidar_ros {
     std::string serial_port;
     int serial_baudrate;
     int res;
+    int result_timeout_counter;
+    int result_fail_counter;
+    int bad_health_counter;
 
     boost::mutex mutex_;
     ros::Publisher scan_pub;
@@ -68,9 +73,11 @@ namespace rplidar_ros {
     ros::ServiceServer start_motor_service;
     ros::ServiceServer reset_device_service;
     ros::ServiceServer reset_scan_service;
+    ros::Time starting_time;
+    ros::Duration elapsed_time;
 
     boost::shared_ptr<boost::thread> device_thread_;
-
+    diagnostic_updater::Updater updater;
 
   };
 

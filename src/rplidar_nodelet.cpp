@@ -27,9 +27,13 @@ namespace rplidar_ros {
     inverted = false;
     angle_compensate = true;
 
-
     initialised = false;
     res = 0;
+
+    result_timeout_counter = 0;
+    result_fail_counter = 0;
+    bad_health_counter = 0;
+    starting_time = ros::Time::now();
 
     ros::NodeHandle &nh = this->getNodeHandle();
     ros::NodeHandle &nh_private = this->getPrivateNodeHandle();
@@ -57,8 +61,48 @@ namespace rplidar_ros {
 
     scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
 
+    updater.setHardwareID("none");
+    updater.add("RPLidar Device Status", this, &RPlidarNodelet::device_diagnostics);
+
     device_thread_ = boost::shared_ptr< boost::thread >
       (new boost::thread(boost::bind(&RPlidarNodelet::devicePoll, this)));
+  }
+
+  void RPlidarNodelet::device_diagnostics(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  {
+    if (!initialised)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "RPLidar not initialised.");
+    }
+    else
+    {
+      if (op_result == RESULT_OK)
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "RPLidar in good health and working.");
+      }
+      else if (op_result == RESULT_OPERATION_FAIL)
+      {
+        // this is the case of non-360 degree scan
+        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "RPLidar scan result fail!(non-360 scan result)");
+      }
+      else if (op_result == RESULT_OPERATION_TIMEOUT)
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "RPLidar scan result timeout!");
+      }
+      else
+      {
+        // can publish op_result(byte) here
+        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "RPLidar result status undefined!");
+      }
+    }
+
+    elapsed_time = ros::Time::now() - starting_time;
+    // output the counter and frequency of error with respect to elapsed time
+    stat.addf("elapsed_time", "%.3fs", elapsed_time.toSec());
+    stat.add("bad_health_counter", bad_health_counter);
+    stat.add("result_timeout_counter", result_timeout_counter);
+    stat.add("result_fail_counter", result_fail_counter);
+
   }
 
   void RPlidarNodelet::devicePoll()
@@ -89,6 +133,7 @@ namespace rplidar_ros {
         }
         else
         {
+          bad_health_counter++;
           if (!checkRPLIDARHealth(drv))
           {
             NODELET_INFO("Bad health. Let's better re-initialise the driver.");
@@ -127,6 +172,8 @@ namespace rplidar_ros {
           }
         }
       }
+
+      updater.update();
     }
     // done!
     RPlidarDriver::DisposeDriver(&drv);
@@ -190,6 +237,7 @@ namespace rplidar_ros {
                          frame_id);
            }
       } else if (op_result == RESULT_OPERATION_FAIL) {
+          result_fail_counter++;
             // All the data is invalid
             // SHOULD NOT PUBLISH ANY DATA FROM here
             // BECAUSE IT CAN CRASH THE PROGRAMS USING THE DATA
@@ -208,8 +256,12 @@ namespace rplidar_ros {
         }
 
     }
-    else if ( op_result == RESULT_OPERATION_TIMEOUT)
+    else if (op_result == RESULT_OPERATION_TIMEOUT)
     {
+      result_timeout_counter++;
+      // to catch this error before we set initialized to false
+      // will quickly fade away but good to catch on timeline
+      updater.force_update();
       NODELET_WARN_STREAM("RPLidar: she's dead Jim! [timed out waiting for a full 360 scan]");
       initialised = false;
     }
