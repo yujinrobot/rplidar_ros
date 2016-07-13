@@ -46,6 +46,7 @@ namespace rplidar_ros {
     bool reset_device(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool reset_scan(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     void device_diagnostics(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    void diagnosticsRatePoll();
 
     RPlidarNodelet(){};
     ~RPlidarNodelet(){};
@@ -61,11 +62,16 @@ namespace rplidar_ros {
     bool inverted;
     std::string frame_id;
     std::string serial_port;
+    int diagnostics_time_window;
     int serial_baudrate;
     int res;
     int result_timeout_counter;
     int result_fail_counter;
     int bad_health_counter;
+    std::deque<ros::Time> result_timeout_deque;
+    std::deque<ros::Time> result_fail_deque;
+    std::deque<ros::Time> bad_health_deque;
+    std::vector< std::deque<ros::Time> > rate_error_deques;
 
     boost::mutex mutex_;
     ros::Publisher scan_pub;
@@ -77,6 +83,7 @@ namespace rplidar_ros {
     ros::Duration elapsed_time;
 
     boost::shared_ptr<boost::thread> device_thread_;
+    boost::shared_ptr<boost::thread> diagnostics_rate_thread_;
     diagnostic_updater::Updater updater;
 
   };
