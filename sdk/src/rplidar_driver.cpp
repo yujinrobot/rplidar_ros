@@ -58,7 +58,7 @@ RPlidarDriver * RPlidarDriver::CreateDriver(_u32 drivertype)
 }
 
 
-void RPlidarDriver::DisposeDriver(RPlidarDriver * drv)
+void RPlidarDriver::DisposeDriver(RPlidarDriver ** drv)
 {
     delete drv;
 }

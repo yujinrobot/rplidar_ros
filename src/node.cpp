@@ -182,13 +182,13 @@ int main(int argc, char * argv[]) {
     if (IS_FAIL(drv->connect(serial_port.c_str(), (_u32)serial_baudrate))) {
         fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
             , serial_port.c_str());
-        RPlidarDriver::DisposeDriver(drv);
+        RPlidarDriver::DisposeDriver(&drv);
         return -1;
     }
 
     // check health...
     if (!checkRPLIDARHealth(drv)) {
-        RPlidarDriver::DisposeDriver(drv);
+        RPlidarDriver::DisposeDriver(&drv);
         return -1;
     }
 
@@ -275,6 +275,6 @@ int main(int argc, char * argv[]) {
     // done!
     drv->stop();
     drv->stopMotor();
-    RPlidarDriver::DisposeDriver(drv);
+    RPlidarDriver::DisposeDriver(&drv);
     return 0;
 }
