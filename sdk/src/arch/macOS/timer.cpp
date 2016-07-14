@@ -32,16 +32,22 @@
  *
  */
 
-#include "sdkcommon.h"
-#include "hal/thread.h"
+#include "arch/macOS/arch_macOS.h"
 
-#if defined(_WIN32)
-#include "arch/win32/winthread.hpp"
-#elif defined(_MACOS)
-#include "arch/macOS/thread.hpp"
-#elif defined(__GNUC__)
-#include "arch/linux/thread.hpp"
-#else
-#error no threading implemention found for this platform.
-#endif
 
+namespace rp{ namespace arch{
+_u64 getus()
+{
+    timeval now;
+    gettimeofday(&now,NULL);
+    return now.tv_sec*1000000 + now.tv_usec;
+}
+
+_u32 rp_getms()
+{
+    timeval now;
+    gettimeofday(&now,NULL);
+    return now.tv_sec*1000L + now.tv_usec/1000L;
+}
+
+}}

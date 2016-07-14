@@ -32,16 +32,34 @@
  *
  */
 
-#include "sdkcommon.h"
-#include "hal/thread.h"
+#pragma once
 
-#if defined(_WIN32)
-#include "arch/win32/winthread.hpp"
-#elif defined(_MACOS)
-#include "arch/macOS/thread.hpp"
-#elif defined(__GNUC__)
-#include "arch/linux/thread.hpp"
-#else
-#error no threading implemention found for this platform.
-#endif
+// libc dep
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <math.h>
+#include <time.h>
+#include <stdarg.h>
 
+// libc++ dep
+#include <iostream>
+#include <string>
+
+
+// POSIX specific
+extern "C" {
+#include <unistd.h>
+#include <errno.h>
+#include <pthread.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <time.h>
+}
+
+#include "arch/macOS/timer.h"

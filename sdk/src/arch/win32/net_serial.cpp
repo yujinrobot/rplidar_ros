@@ -1,37 +1,35 @@
 /*
- * Copyright (c) 2014, RoboPeak
- * All rights reserved.
+ *  RPLIDAR SDK
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, 
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- *    this list of conditions and the following disclaimer in the documentation 
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *  Copyright (c) 2009 - 2014 RoboPeak Team
+ *  http://www.robopeak.com
+ *  Copyright (c) 2014 - 2016 Shanghai Slamtec Co., Ltd.
+ *  http://www.slamtec.com
  *
  */
 /*
- *  RoboPeak LIDAR System
- *  Serial Device Driver for Win32
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  Copyright 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
 #include "sdkcommon.h"
@@ -63,7 +61,7 @@ bool raw_serial::open()
 }
 
 bool raw_serial::bind(const char * portname, _u32 baudrate, _u32 flags)
-{   
+{
     strncpy(_portName, portname, sizeof(_portName));
     _baudrate = baudrate;
     _flags    = flags;
@@ -73,7 +71,7 @@ bool raw_serial::bind(const char * portname, _u32 baudrate, _u32 flags)
 bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
 {
     if (isOpened()) close();
-    
+
     _serial_handle = CreateFile(
         portname,
         GENERIC_READ | GENERIC_WRITE,
@@ -91,7 +89,7 @@ bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
         close();
         return false;
     }
-    
+
     _dcb.BaudRate = baudrate;
     _dcb.ByteSize = 8;
     _dcb.Parity   = NOPARITY;
@@ -105,7 +103,7 @@ bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
     }
 
     //Clear the DTR bit to let the motor spin
-    EscapeCommFunction(_serial_handle, CLRDTR);
+    clearDTR();
 
     if (!SetCommTimeouts(_serial_handle, &_co))
     {
@@ -125,7 +123,7 @@ bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
         return false;
     }
 
-    Sleep(30); 
+    Sleep(30);
     _is_serial_opened = true;
     return true;
 }
@@ -137,7 +135,7 @@ void raw_serial::close()
 
     CloseHandle(_serial_handle);
     _serial_handle = INVALID_HANDLE_VALUE;
-    
+
     _is_serial_opened = false;
 }
 
@@ -148,7 +146,7 @@ int raw_serial::senddata(const unsigned char * data, size_t size)
     if (!isOpened()) return ANS_DEV_ERR;
 
     if (data == NULL || size ==0) return 0;
-    
+
     if(ClearCommError(_serial_handle, &error, NULL) && error > 0)
         PurgeComm(_serial_handle, PURGE_TXABORT | PURGE_TXCLEAR);
 
@@ -167,7 +165,7 @@ int raw_serial::recvdata(unsigned char * data, size_t size)
 
     if(!ReadFile(_serial_handle, data, size, &r_len, &_ro))
     {
-        if(GetLastError() == ERROR_IO_PENDING) 
+        if(GetLastError() == ERROR_IO_PENDING)
         {
             if(!GetOverlappedResult(_serial_handle, &_ro, &r_len, FALSE))
             {
@@ -230,10 +228,11 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
     COMSTAT  stat;
     DWORD error;
     DWORD msk,length;
-	size_t dummy_length;
-    if (returned_size==NULL) returned_size=&dummy_length;
+    size_t dummy_length;
 
-    
+    if (returned_size==NULL) returned_size=(size_t *)&dummy_length;
+
+
     if ( isOpened()) {
         size_t rxqueue_remaining =  rxqueue_count();
         if (rxqueue_remaining >= data_count) {
@@ -298,6 +297,20 @@ size_t raw_serial::rxqueue_count()
         return 0;
     }
     return com_stat.cbInQue;
+}
+
+void raw_serial::setDTR()
+{
+    if ( !isOpened() ) return;
+
+    EscapeCommFunction(_serial_handle, SETDTR);
+}
+
+void raw_serial::clearDTR()
+{
+    if ( !isOpened() ) return;
+
+    EscapeCommFunction(_serial_handle, CLRDTR);
 }
 
 
