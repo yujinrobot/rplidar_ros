@@ -52,6 +52,8 @@ namespace rplidar_ros {
     nh_private.param<int>("diag_time_window", diag_time_window, 30);
     diag_time_window_seconds = ros::Duration(diag_time_window * 60); // for seconds
 
+    bag.open("invalid_data.bag", rosbag::bagmode::Write);
+
     res = RPlidarNodelet::init_driver(serial_port, serial_baudrate);
     if (res < 0)
     {
@@ -384,6 +386,8 @@ namespace rplidar_ros {
         pub->publish(scan_msg);
       } else {
         NODELET_WARN_STREAM("RPLidar: not publishing since data count < 360 [" << node_count << "]");
+        // record this in bag
+        bag.write("rplidar", ros::Time::now(), scan_msg);
       }
   }
 

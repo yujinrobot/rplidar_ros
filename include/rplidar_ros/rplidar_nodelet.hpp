@@ -14,6 +14,7 @@
 #include "std_srvs/Trigger.h"
 #include "std_srvs/Empty.h"
 #include "boost/thread.hpp"
+#include <rosbag/bag.h>
 
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 
@@ -49,7 +50,9 @@ namespace rplidar_ros {
     void diagnosticsRatePoll();
 
     RPlidarNodelet(){};
-    ~RPlidarNodelet(){};
+    ~RPlidarNodelet(){
+      bag.close();
+    };
 
   private:
     RPlidarDriver * drv;//
@@ -88,6 +91,7 @@ namespace rplidar_ros {
     boost::shared_ptr<boost::thread> device_thread_;
     boost::shared_ptr<boost::thread> diagnostics_rate_thread_;
     diagnostic_updater::Updater updater;
+    rosbag::Bag bag;
 
   };
 

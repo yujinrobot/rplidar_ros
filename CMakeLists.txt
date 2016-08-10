@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   diagnostic_msgs
   diagnostic_updater
+  rosbag
 )
 
 
