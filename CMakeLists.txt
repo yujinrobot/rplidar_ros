@@ -3,7 +3,7 @@ project(rplidar_ros)
 
 set(RPLIDAR_SDK_PATH "./sdk/")
 
-FILE(GLOB RPLIDAR_SDK_SRC 
+FILE(GLOB RPLIDAR_SDK_SRC
   "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/*.cpp"
@@ -21,7 +21,13 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS ${RPLIDAR_SDK_PATH}/include
+  LIBRARIES ${PROJECT_NAME}
+)
+
+add_library(${PROJECT_NAME} ${RPLIDAR_SDK_SRC})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(rplidarNode src/node.cpp ${RPLIDAR_SDK_SRC})
 target_link_libraries(rplidarNode ${catkin_LIBRARIES})
