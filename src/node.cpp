@@ -306,6 +306,10 @@ int main(int argc, char * argv[]) {
                              frame_id);
             }
         }
+        else if (op_result == RESULT_OPERATION_TIMEOUT)
+        {
+          std::cout << "timed out waiting for a full 360 scan" << std::endl;          
+        }
 
         ros::spinOnce();
     }
