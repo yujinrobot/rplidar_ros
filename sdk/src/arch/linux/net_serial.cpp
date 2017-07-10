@@ -221,6 +221,7 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
         }
     }
 
+    int desired_data_number( data_count*2 );
     while ( isOpened() )
     {
         /* Do the select */
@@ -253,6 +254,11 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
                 int expect_remain_time = (data_count - *returned_size)*1000000*8/_baudrate;
                 if (remain_timeout > expect_remain_time)
                     usleep(expect_remain_time);
+                
+                if( --desired_data_number < 0 )
+                {
+                  return ANS_TIMEOUT;
+                }
             }
         }
         
