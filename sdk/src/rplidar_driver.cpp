@@ -708,7 +708,8 @@ u_result RPlidarDriverSerialImpl::_waitCapsuledNode(rplidar_response_capsule_mea
     _u8 *nodeBuffer = (_u8*)&node;
     _u32 waitTime;
 
-   while ((waitTime=getms() - startTs) <= timeout) {
+   while ((waitTime=getms() - startTs) <= timeout) 
+   {
         size_t remainSize = sizeof(rplidar_response_capsule_measurement_nodes_t) - recvPos;
         size_t recvSize;
 
